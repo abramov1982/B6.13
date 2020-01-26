@@ -1,21 +1,25 @@
+# Импорт модулей
+
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-# Описание подключения к базе данных
+
+# Импорт модулей
+
 DB_PATH = 'sqlite:///albums.sqlite3'
 Base = declarative_base()
 
-# Устанавливает соединение к базе данных, создает таблицы, если их еще нет и возвращает объект сессии
-def connect_db():
-    engine = sa.create_engine(DB_PATH)
-    Base.metadata.create_all(engine)
-    session = sessionmaker(engine)
-    return session()
 
-session = connect_db()
+# Создание классов ошибок и описание структуры базы
 
-# Описание структуры таблиц в базе данных.
+class Error(Exception):
+    pass
+
+class AlreadyExists(Error):
+    pass
+
+
 class Album(Base):
     __tablename__ = 'album'
 
@@ -25,29 +29,43 @@ class Album(Base):
     genre = sa.Column(sa.TEXT)
     album = sa.Column(sa.TEXT)
 
+
+# Функция соединения с базой данных
+
+def connect_db():
+    engine = sa.create_engine(DB_PATH)
+    Base.metadata.create_all(engine)
+    session = sessionmaker(engine)
+    return session()
+
+
+# Функция поиска альбомов
+
 def find(artist):
+    session = connect_db()
     albums = session.query(Album).filter(Album.artist == artist).all()
-    if len(albums) == 0:
-        return False
     return albums
 
-def add(year, artist, genre, album):
+
+# Функция добавления записей в базу
+
+def save(year, artist, genre, album):
     assert isinstance(year, int), 'Incorrect date'
     assert isinstance(artist, str), 'Incorrect artist'
     assert isinstance(genre, str), 'Incorrect genre'
     assert isinstance(album, str), 'Incorrect album'
 
     session = connect_db()
-    album_add = session.query(Album).filter(Album.album == album, Album.artist == artist).first()
-    if album_add is not None:
-        raise AlreadyExists('Такой альбом уже есть и его имя: #{}'.format(saved_album.id))
+    saved_album = session.query(Album).filter(Album.album == album, Album.artist == artist).first()
+    if saved_album is not None:
+        raise AlreadyExists('Album already exists and has #{}'.format(saved_album.id))
 
-    album: Album = Album(
+    album = Album(
         year=year,
         artist=artist,
         genre=genre,
         album=album
-    )    
+    )
     session.add(album)
     session.commit()
     return album

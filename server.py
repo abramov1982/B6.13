@@ -5,8 +5,11 @@ from bottle import run
 from bottle import request
 
 # Модуль поиска и добавления альбомов в базу.
+
 import album
 
+
+# Поиск по альбомам
 
 @route('/albums/<artist>')
 def albums(artist):
@@ -21,6 +24,8 @@ def albums(artist):
     return result
 
 
+# Добавление альбомов
+
 @route('/albums', method='POST')
 def create_album():
     year = request.forms.get('year')
@@ -34,10 +39,10 @@ def create_album():
         return HTTPError(400, 'Указан некорректный год альбома')
 
     try:
-        new_album = album.add(year, artist, genre, album_name)
+        new_album = album.save(year, artist, genre, album_name)
     except AssertionError as err:
         result = HTTPError(400, str(err))
-    except album.add.AlreadyExists as err:
+    except album.AlreadyExists as err:
         result = HTTPError(409, str(err))
     else:
         result = 'Альбом #{} успешно сохранен'.format(new_album.id)
